@@ -80,11 +80,18 @@ T *= -1
 for i in range(0, len(pokemon) - 1):
     p = pokemon[i + 1]
     T[Type[p[1].upper()].value, i] = 1
+
     # if p[2] != '':
     #     T[Type[p[2].upper()].value, i] = 1
 
 stats = np.array(pokemon[1:])
 stats = stats[:, 3:10].astype(np.double)
+
+#capture_rate,experience_growth,height_m,weight_kg
+other = np.array(pokemon[1:])
+other = other[:, 12:16].astype(np.double)
+
+print(other)
 
 ones = np.ones((len(stats), 1))
 x = np.column_stack((stats, ones))
