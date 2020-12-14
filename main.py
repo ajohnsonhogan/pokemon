@@ -1,32 +1,10 @@
 import csv
 import numpy as np
-from enum import Enum
 import matplotlib.pyplot as plt
 import matplotlib.patches
-from sklearn import metrics
 import seaborn as sns
 import pandas as pd
-
-
-class Type(Enum):
-    BUG = 0
-    DARK = 1
-    DRAGON = 2
-    ELECTRIC = 3
-    FAIRY = 4
-    FIRE = 5
-    FIGHTING = 6
-    FLYING = 7
-    GROUND = 8
-    GRASS = 9
-    GHOST = 10
-    ICE = 11
-    NORMAL = 12
-    POISON = 13
-    WATER = 14
-    PSYCHIC = 15
-    ROCK = 16
-    STEEL = 17
+from type import Type
 
 
 # A = (X^T*X)^-1*X^T
@@ -75,8 +53,32 @@ def confusion_mat(original, result):
     return cm.astype(int)
 
 
-np.set_printoptions(linewidth=120)
-np.set_printoptions(threshold=np.inf)
+# sets the pyplot settings plots the dataframe as a seaborn heatmap
+def show_heatmap(df, name):
+    plt.figure(figsize=(10, 10))
+    heatmap = sns.heatmap(df, annot=True, cmap="Blues")
+    for i in range(18):
+        heatmap.add_patch(matplotlib.patches.Rectangle((i, i), 1, 1, fill=False, edgecolor='red', lw=1))
+    plt.ylabel("actual type")
+    plt.xlabel("predicted type")
+    plt.title(name)
+    plt.show()
+
+
+# shows the heatmaps for the absolute and normalized confusion matrices
+# and prints the number correct out of the total
+def show_confusion_matrix(conf, name):
+    df = pd.DataFrame(data=conf, columns=[t.name for t in Type], index=[t.name for t in Type])
+    normalized = (df.T / df.T.sum()).T
+
+    show_heatmap(df, name)
+    show_heatmap(normalized, name)
+
+    num_correct = sum(confusion[i, i] for i in range(18))
+    total = sum(confusion[i, j] for i in range(18) for j in range(18))
+    print(name + ":", num_correct, "/", total, "correct")
+
+
 with open('pokemon.csv') as p:
     pokemon = list(csv.reader(p, delimiter=','))
 
@@ -87,46 +89,18 @@ for i in range(0, len(pokemon) - 80):
     p = pokemon[i + 1]
     T[Type[p[1].upper()].value, i] = 1
 
-    # if p[2] != '':
-    #     T[Type[p[2].upper()].value, i] = 1
-
 stats = np.array(pokemon[1:723])
-stats = stats[:, 3:16].astype(np.double)
-
-# capture_rate,experience_growth,height_m,weight_kg
-other = np.array(pokemon[1:723])
-other = other[:, 17:18].astype(np.double)
-
-# print(other)
+stats = np.column_stack((stats[:, 3:16].astype(np.double), stats[:, 17:18].astype(np.double)))
 
 ones = np.ones((len(stats), 1))
-x = np.column_stack((stats, other, ones))
-# x = np.column_stack((stats, ones))
+x = np.column_stack((stats, ones))
+
+confusion = confusion_mat(pokemon[1:723], test(pokemon[1:723]))
+
+show_confusion_matrix(confusion, "input dataset")
 
 with open('gen7.csv') as p:
     gen7 = list(csv.reader(p, delimiter=','))
 confusion = confusion_mat(gen7, test(gen7))
 
-# confusion = confusion_mat(pokemon[1:], test(pokemon[1:]))
-
-# plot_confusion_matrix(confusion, classes=target_s.unique(), normalize=True)
-# print(confusion)
-# plt.matshow(confusion, cmap="binary")
-# plt.show()
-
-df = pd.DataFrame(data=confusion, columns=[t.name for t in Type], index=[t.name for t in Type])
-normalized = (df.T / df.T.sum()).T
-
-plt.figure(figsize=(9, 9))
-# heatmap = sns.heatmap(df, annot=True, cmap="Blues")
-heatmap = sns.heatmap(normalized, annot=True, cmap="Blues")
-for i in range(18):
-    heatmap.add_patch(matplotlib.patches.Rectangle((i, i), 1, 1, fill=False, edgecolor='red', lw=1))
-plt.ylabel("actual type")
-plt.xlabel("predicted type")
-
-plt.show()
-
-num_correct = sum(confusion[i,i] for i in range(18))
-total = sum (confusion[i,j] for i in range(18) for j in range(18))
-print(num_correct, "/", total, "correct")
+show_confusion_matrix(confusion, "generation 7")
