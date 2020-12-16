@@ -22,8 +22,8 @@ def getW(A, t):
 
 
 # calculates the predicted type for each input row
-def test(input):
-    A = getA(x)
+def test(input, X, T):
+    A = getA(X)
     result_labels = np.ones([len(input)])
 
     for i in range(len(input)):
@@ -74,33 +74,47 @@ def show_confusion_matrix(conf, name):
     show_heatmap(df, name)
     show_heatmap(normalized, name)
 
-    num_correct = sum(confusion[i, i] for i in range(18))
-    total = sum(confusion[i, j] for i in range(18) for j in range(18))
+    num_correct = sum(conf[i, i] for i in range(18))
+    total = sum(conf[i, j] for i in range(18) for j in range(18))
     print(name + ":", num_correct, "/", total, "correct")
 
 
-with open('pokemon.csv') as p:
-    pokemon = list(csv.reader(p, delimiter=','))
+def getT(pokemon):
+    T = np.ones([18, len(pokemon) - 80])
+    T *= -1
 
-T = np.ones([18, len(pokemon) - 80])
-T *= -1
+    for i in range(0, len(pokemon) - 80):
+        p = pokemon[i + 1]
+        T[Type[p[1].upper()].value, i] = 1
+    return T
 
-for i in range(0, len(pokemon) - 80):
-    p = pokemon[i + 1]
-    T[Type[p[1].upper()].value, i] = 1
 
-stats = np.array(pokemon[1:723])
-stats = np.column_stack((stats[:, 3:16].astype(np.double), stats[:, 17:18].astype(np.double)))
+def getX(pokemon):
+    stats = np.array(pokemon[1:723])
+    stats = np.column_stack((stats[:, 3:16].astype(np.double), stats[:, 17:18].astype(np.double)))
 
-ones = np.ones((len(stats), 1))
-x = np.column_stack((stats, ones))
+    ones = np.ones((len(stats), 1))
+    return np.column_stack((stats, ones))
 
-confusion = confusion_mat(pokemon[1:723], test(pokemon[1:723]))
 
-show_confusion_matrix(confusion, "input dataset")
+def main():
+    with open('pokemon.csv') as p:
+        pokemon = list(csv.reader(p, delimiter=','))
 
-with open('gen7.csv') as p:
-    gen7 = list(csv.reader(p, delimiter=','))
-confusion = confusion_mat(gen7, test(gen7))
+    T = getT(pokemon)
 
-show_confusion_matrix(confusion, "generation 7")
+    X = getX(pokemon)
+
+    confusion = confusion_mat(pokemon[1:723], test(pokemon[1:723], X, T))
+
+    show_confusion_matrix(confusion, "input dataset")
+
+    with open('gen7.csv') as p:
+        gen7 = list(csv.reader(p, delimiter=','))
+    confusion = confusion_mat(gen7, test(gen7, X, T))
+
+    show_confusion_matrix(confusion, "generation 7")
+
+
+if __name__ == "__main__":
+    main()

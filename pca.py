@@ -3,6 +3,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from type import Type
+import main
+import csv
 
 with open('pokemon.csv') as p:
     pokemon = pd.read_csv(p)
@@ -32,10 +34,28 @@ principalDf = pd.DataFrame(principal_components, columns=['principal component 1
 finalDf = pd.concat([principalDf, pokemon[['type1']]], axis=1)
 finalDf["type1"] = finalDf.apply(lambda row: Type[row.type1.upper()].value, axis=1)
 
+
 # scatter plot of each pokemon according to type based on the top 2 principal components
 finalDf.plot.scatter(x="principal component 1",
                      y="principal component 2",
                      c="type1",
                      colormap="tab20c",
                      colorbar=False)
+plt.title("actual type")
+plt.show()
+
+with open('pokemon.csv') as p:
+    pokemon = list(csv.reader(p, delimiter=','))
+
+T = main.getT(pokemon)
+X = main.getX(pokemon)
+result = main.test(pokemon[1:], X, T)
+
+# scatter plot of each pokemon according to *predicted* type based on the top 2 principal components
+finalDf.plot.scatter(x="principal component 1",
+                     y="principal component 2",
+                     c=result,
+                     colormap="tab20c",
+                     colorbar=False)
+plt.title("predicted type")
 plt.show()
